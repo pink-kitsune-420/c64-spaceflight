@@ -988,6 +988,7 @@
   function start(which) {
     current = which;
     machine = new MiniC64(decode(PROGRAMS[which]));
+    window.c64 = machine;                     // (for poking at it from the console)
     document.querySelectorAll('[data-start]').forEach((b) => {
       b.setAttribute('aria-pressed', String(b.dataset.start === which));
     });
@@ -1011,14 +1012,16 @@
   window.addEventListener('blur', hint);
   canvas.addEventListener('pointerdown', () => window.focus());
 
-  // ---- 50 frames a second whatever the display rate
+  // ---- 50 frames a second whatever the display rate. Frames missed while
+  // the browser was busy are caught up, a few per tick; after more than
+  // 1.5 s away (another tab) the game just carries on instead.
   let last = performance.now(), behind = 0;
   function tick(now) {
     behind += now - last;
     last = now;
-    if (behind > 100) behind = 20;          // back from a hidden tab: don't race
+    if (behind > 1500) behind = 20;
     let ran = 0;
-    while (behind >= 20 && ran < 5) {
+    while (behind >= 20 && ran < 12) {
       machine.runFrame();
       behind -= 20;
       ran++;
